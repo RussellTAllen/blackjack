@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+    	<meta charset="utf-8">
+    	<meta name="description" content="This is where your description goes">
+    	<meta name="keywords" content="one, two, three">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<title>Blackjack</title>
+
+		<!-- external CSS link -->
+		<link rel="stylesheet" href="css/normalize.css">
+		<link rel="stylesheet" href="css/style.css">
+	</head>
+	<body>
+		<h1>BLACKJACK</h1>
+
+		<main>
+			<form>
+				<label for="deck-quantity">How many decks would you like to play with?  (Typically Casinos play with 6 decks)</label>
+				<input id="deck-quantity" type="number" value=6 min=1 max=8>
+				<input id="get-deck" type="button" value="Get Deck(s)">
+			</form>
+			
+
+			<section id="dealer">
+				<figure id="dealer-cards"></figure>
+			</section>
+
+			<section id="player">
+				<figure id="player-cards"></figure>
+				<h3 id="player-money">$1,000</h3>
+				<label for="bet-amount">Bet: </label>
+					<input id="bet-amount" type="number" min=10 max=1000 step=10>
+					<input id="deal" type="button" value="Deal Cards!">
+					<input id="hit" type="button" value="Hit Me!">
+					<input id="stand" type="button" value="Stand!">
+			</section>
+		</main>
+		
+
+		<script type="text/javascript" src="js/main.js"></script>
+	</body>
+</html>
+
