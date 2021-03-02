@@ -1,20 +1,28 @@
-// Got dealing sorted out, need to handle turning aces into 1's.  Maybe an 'aces' variable on the object that counts the aces, and if aces > 0, then you can turn 11 into 1 and aces--
+// Before making app more complex, figure out how to add additional players
+//          - [ ] Get proper number of cards dealt in the dealCards function
+//          - [ ] Get DOM to print the right amount of player divs... probably need to un-hardcode the HTML and put all in JS
+// Need to get DOM hiding/showing buttons at appropriate times
 
 
 document.querySelector('#get-deck').addEventListener('click', fetchDeck)
 document.querySelector('#deal').addEventListener('click', dealCards)
-// document.querySelector('#hit').addEventListener('click', playerHand.hitCard)
-// document.querySelector('#calculate').addEventListener('click',)
 
 
 let deckID
 let addCard
 let hits = 2
-const playerCards = document.querySelector('#player-cards')
+let numOfPlayers
+let playerHand = []
+let playerBet = []
+let betAmount = []
+
+// const playerCards = document.querySelector('#player-cards')
 const dealerCards = document.querySelector('#dealer-cards')
-const betAmount = document.querySelector('#bet-amount')
+// const betAmount = document.querySelector('#bet-amount')
+const playerCount = document.querySelector('#player-count')
 
-
+///////////
+// CLASSES
 class Hand{
     constructor(card1, card2){
         this.card1 = card1
@@ -98,14 +106,13 @@ class Bet{
         }
         console.log(playerBet.bankroll)
     }
-
 }
-
-// FETCH DECK
+/////////////
+// FUNCTIONS
+// FETCH DECK/SET PLAYERS
 function fetchDeck(){
     const deckNum = document.querySelector('#deck-quantity').value
-    
-    console.log(deckNum)
+    numOfPlayers = Number(playerCount.value)
 
     fetch('https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count='+deckNum)
         .then(res => res.json()) // parse response as JSON
@@ -121,17 +128,45 @@ function fetchDeck(){
 // DEAL INITIAL HANDS
 // may need to pass number of cards to deal as argument and integrate the hitCard function into this function
 function dealCards(){
-    fetch(`https://deckofcardsapi.com/api/deck/${deckID}/draw/?count=3`)
+    const numOfCards = (numOfPlayers*2) + 1
+
+    fetch(`https://deckofcardsapi.com/api/deck/${deckID}/draw/?count=`+numOfCards)
         .then(res => res.json()) // parse response as JSON
         .then(data => {
             console.log(data)
             
-            dealerCards.innerHTML = `<img src="${data.cards[2].image}">`
-            dealerHand = new Hand(data.cards[2].value)      
+            dealerCards.innerHTML = `<img src="${data.cards[0].image}">`
+            dealerHand = new Hand(data.cards[0].value)     
             
-            playerCards.innerHTML = `<img src="${data.cards[0].image}">`
-            playerCards.innerHTML += `<img src="${data.cards[1].image}">`
-            playerHand = new Hand(data.cards[0].value, data.cards[1].value)
+            let div = []
+            let cardNum = 1
+            let label = []
+            
+            for (let i = 1; i <= numOfPlayers; i++){
+                div[i] = document.createElement('div')
+                betAmount[i] = document.createElement('form')
+                label[i] = document.createElement('label')
+                document.querySelector('#players').appendChild(div[i])
+                document.querySelector('#players').appendChild(label[i])
+                document.querySelector('#players').appendChild(betAmount[i])
+                div[i].setAttribute('id', `player${i}`)
+                label[i].innerHTML = `<label for="bet-amount${i}">Bet: </label>`
+                betAmount[i].innerHTML = `<input id="bet-amount${i}" type="number" min=10 max=1000 step=10 value=10>`
+
+                div[i].innerHTML = `<img src="${data.cards[cardNum].image}">`
+                cardNum++
+                div[i].innerHTML += `<img src="${data.cards[cardNum].image}">`                
+                playerHand[i] = new Hand(data.cards[cardNum - 1].value, data.cards[cardNum].value)
+                playerBet[i] = new Bet(Number(betAmount.value))
+                cardNum++
+            }
+
+
+            //////////////////////////////////////////////
+            // CODE FOR ONE PLAYER
+            playerCards.innerHTML = `<img src="${data.cards[1].image}">`
+            playerCards.innerHTML += `<img src="${data.cards[2].image}">`
+            playerHand = new Hand(data.cards[1].value, data.cards[2].value)
             playerHand.calculateValue()
             
             // console.log(playerBet)
@@ -151,6 +186,7 @@ function dealCards(){
 
             document.querySelector('#hit').addEventListener('click', playerHand.hitCard.bind('playerHand'))
             document.querySelector('#stand').addEventListener('click', stand) 
+            ////////////////////////////////////////////////////
         })
         .catch(err => {
             console.log(`error ${err}`)
