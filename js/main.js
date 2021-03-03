@@ -1,12 +1,12 @@
 // Before making app more complex, figure out how to add additional players
-//          - [ ] Get proper number of cards dealt in the dealCards function
-//          - [ ] Get DOM to print the right amount of player divs... probably need to un-hardcode the HTML and put all in JS
+//          - [x] Get proper number of cards dealt in the dealCards function
+//          - [x] Get DOM to print the right amount of player divs... probably need to un-hardcode the HTML and put all in JS
+//          - [ ] Get win conditions working for each player
+//          - [ ] Get bets working for each player
 // Need to get DOM hiding/showing buttons at appropriate times
-
 
 document.querySelector('#get-deck').addEventListener('click', fetchDeck)
 document.querySelector('#deal').addEventListener('click', dealCards)
-
 
 let deckID
 let addCard
@@ -16,9 +16,7 @@ let playerHand = []
 let playerBet = []
 let betAmount = []
 
-// const playerCards = document.querySelector('#player-cards')
 const dealerCards = document.querySelector('#dealer-cards')
-// const betAmount = document.querySelector('#bet-amount')
 const playerCount = document.querySelector('#player-count')
 
 ///////////
@@ -107,6 +105,7 @@ class Bet{
         console.log(playerBet.bankroll)
     }
 }
+
 /////////////
 // FUNCTIONS
 // FETCH DECK/SET PLAYERS
@@ -125,8 +124,8 @@ function fetchDeck(){
             console.log(`error ${err}`)
         });
 }
+
 // DEAL INITIAL HANDS
-// may need to pass number of cards to deal as argument and integrate the hitCard function into this function
 function dealCards(){
     const numOfCards = (numOfPlayers*2) + 1
 
@@ -161,9 +160,8 @@ function dealCards(){
                 cardNum++
             }
 
-
-            //////////////////////////////////////////////
-            // CODE FOR ONE PLAYER
+            //////////////////////////////////////////////////
+            // CODE FOR ONE PLAYER ONLY VERSION
             playerCards.innerHTML = `<img src="${data.cards[1].image}">`
             playerCards.innerHTML += `<img src="${data.cards[2].image}">`
             playerHand = new Hand(data.cards[1].value, data.cards[2].value)
@@ -192,7 +190,7 @@ function dealCards(){
             console.log(`error ${err}`)
         });
 }
-
+// Got to change this to pass turn to the next player and then have it automagically have dealer hit/stand after all players' turns
 // Player stands, automagically have dealer hit/stand
 function stand(){
     console.log(dealerHand.handValue)
@@ -200,25 +198,3 @@ function stand(){
         dealerHand.hitCard('dealerHand')        
     }
 }
-
-
-
-// Maybe should put this in the hand class so that we can change it to "this" to allow hitting dealer object
-// function hitCard(){
-//     fetch(`https://deckofcardsapi.com/api/deck/${deckID}/draw/?count=1`)
-//         .then(res => res.json()) // parse response as JSON
-//         .then(data => {
-//             hits = hits+1
-//             addCard = `card${hits}`
-            
-//             console.log(data)
-//             playerCards.innerHTML += `<img src="${data.cards[0].image}">`
-            
-//             playerHand[addCard] = data.cards[0].value
-//             console.log(playerHand)
-//             console.log(playerHand.calculateValue())
-//         })
-//         .catch(err => {
-//             console.log(`error ${err}`)
-//         });
-// }
