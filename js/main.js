@@ -1,5 +1,6 @@
-// Need to add a <figure> to the players and add the images into that element
-// Need to figure out why the Hit button is automatically being clicked when we deal the cards
+// settle() needs work
+//      - check for naturals, payout appropriately
+// Need to allow bets to be made for each player before "deal cards!"
 // Before making app more complex, figure out how to add additional players
 //          - [x] Get proper number of cards dealt in the dealCards function
 //          - [x] Get DOM to print the right amount of player divs... probably need to un-hardcode the HTML and put all in JS
@@ -18,17 +19,16 @@ let hits = 2
 let numOfPlayers
 let playerHand = []
 let playerBet = []
-let playerNum
+let playerNum = 0
 let betForm = []
-
-
 let dealerCards
+
 const playerCount = document.querySelector('#player-count')
 
-console.log(dealerCards)
-
-///////////
+/////////////
 // CLASSES
+///////////
+
 class Hand{
     constructor(card1, card2){
         this.card1 = card1
@@ -41,7 +41,6 @@ class Hand{
 
     hitCard(user){
         console.log(user)
-        console.log(this)
         fetch(`https://deckofcardsapi.com/api/deck/${deckID}/draw/?count=1`)
             .then(res => res.json()) // parse response as JSON
             .then(data => {
@@ -50,12 +49,16 @@ class Hand{
                 
                 if (user.includes('playerHand')){
                     playerNum = user.substr(-1, 1)
-                    console.log(playerNum)
-                    // Need to get the cards printing the the DOM properly
-                    // document.querySelector('#player0').innerHTML += `<img src="${data.cards[0].image}">`                               
                     document.querySelector(`#player-cards${playerNum}`).innerHTML += `<img src="${data.cards[0].image}">`                               
                     playerHand[playerNum][addCard] = data.cards[0].value
                     playerHand[playerNum].calculateValue()
+                    if (playerHand[playerNum].handValue > 21){
+                        const busted = document.createElement('h2')
+                        busted.textContent = 'You Busted!'
+                        document.querySelector(`#player${playerNum}`).appendChild(busted)
+                        playerHand[playerNum].stand()
+                        passTurn()
+                    }
                 }else if (user.includes('dealerHand')){
                     dealerHits++
                     dealerCard = `card${dealerHits}`
@@ -63,13 +66,24 @@ class Hand{
                     dealerHand[dealerCard] = data.cards[0].value
                     dealerHand.calculateValue()
                     if (dealerHand.handValue < 17) this.hitCard('dealerHand')
-                    if (dealerHand.handValue > 17) playerBet.settle()
+                    if (dealerHand.handValue >= 17) {
+                        playerBet[0].settle()
+                    }
                 }               
             })
             .catch(err => {
                 console.log(`error ${err}`)
             });
-    }   
+    }
+    stand(){
+        playerNum++
+        passTurn()
+        if (playerNum === playerHand.length){
+            if (dealerHand.handValue < 17 || dealerHand.handValue == undefined){
+                dealerHand.hitCard('dealerHand')        
+            }
+        }
+    }
     calculateValue(){
         this.handValue = 0
         this.aces = 0
@@ -88,10 +102,9 @@ class Hand{
             this.handValue -= 10
             this.aces--
         }
-        // BUST FUNCTION!
+        // // BUST FUNCTION!
         if (this.handValue > 21) {
             this.bust = true
-            playerBet.settle()
         }
         return this.handValue
     }
@@ -103,25 +116,32 @@ class Bet{
         this.wager = wager
     }
     settle(){
+        console.log(this)
         console.log(this.wager)
-        console.log('settling...')
-        if (playerHand.bust === true) console.log("You busted!")
-        if ((dealerHand.bust === true && playerHand.bust === false) || 
-            (playerHand.handValue > dealerHand.handValue && playerHand.bust === false)){
-                console.log('You win!')
-                this.bankroll += this.wager + this.wager
-        }else if (playerHand.handValue === dealerHand.handValue && playerHand.bust === false){
-            console.log("It's a push")
-            this.bankroll += this.wager
-        }else if (playerHand.handValue < dealerHand.handValue || playerHand.bust === true){
-            console.log("You lose!")
+
+        for (let i = 0; i < numOfPlayers; i++){
+            console.log('settling... for player '+i)
+            if (playerHand[i].bust === true) console.log("You busted!")
+            if (playerHand[i].natural === true && dealerHand.natural === false) playerBet[i].bankroll += (playerBet[i].wager) * 2.5
+            else if ((dealerHand.bust === true && playerHand[i].bust === false) || 
+                (playerHand[i].handValue > dealerHand.handValue && playerHand[i].bust === false)){
+                    console.log(`Player ${i+1} wins!`)
+                    playerBet[i].bankroll += playerBet[i].wager * 2
+            }else if (playerHand[i].handValue === dealerHand.handValue && playerHand[i].bust === false){
+                console.log(`It's a push for Player ${i+1}`)
+                playerBet[i].bankroll += playerBet[i].wager
+            }else if (playerHand[i].handValue < dealerHand.handValue || playerHand[i].bust === true){
+                console.log(`Player ${i+1}, you lose!`)
+            }
+            console.log(playerBet[i].bankroll)
         }
-        console.log(playerBet.bankroll)
     }
 }
 
-/////////////
+///////////////
 // FUNCTIONS
+///////////////
+
 // FETCH DECK/SET NUMBER OF PLAYERS
 function fetchDeck(){
     const deckNum = document.querySelector('#deck-quantity').value
@@ -149,7 +169,7 @@ function dealCards(){
         .then(data => {
             console.log(data)
             
-            // Handle Dealer
+            // Handle Dealer //
             const dealerFig = document.createElement('figure')
             dealerFig.setAttribute('id', 'dealer-cards')            
             dealerFig.innerHTML = `<img src="${data.cards[0].image}">`
@@ -160,7 +180,7 @@ function dealCards(){
             
             dealerHand = new Hand(data.cards[0].value)     
             
-            // Handle Players
+            // Handle Players //
             let div = []
             let betForm = []
             let betInput = []
@@ -169,7 +189,9 @@ function dealCards(){
             let playerCards = []
             
             for (let i = 0; i < numOfPlayers; i++){
-                // Create DOM elements
+                // Create DOM elements //
+                ////////////////////////////////////////////////////
+                // Think I need to move all this into the 'Fetch Deck' function
                 const header = document.createElement('h2')
                 header.innerText = `Player ${i+1}`
 
@@ -178,7 +200,7 @@ function dealCards(){
                 
                 playerCards[i] = document.createElement('figure')
                 playerCards[i].setAttribute('id', `player-cards${i}`)
-                
+
                 label[i] = document.createElement('label')
                 label[i].setAttribute('for', `bet-amount${i}`)
                 label[i].textContent = "Bet: "
@@ -193,19 +215,24 @@ function dealCards(){
                 betInput[i].setAttribute('max', 1000)
                 betInput[i].setAttribute('step', 10)
                 betInput[i].setAttribute('value', 10)
+                ////////////////////////////////////////////////////
                 
-                // Insert elements into DOM
+                // Insert elements into DOM //
                 document.querySelector('#players').appendChild(div[i])
                 document.querySelector(`#player${i}`).appendChild(header)
                 document.querySelector(`#player${i}`).appendChild(playerCards[i])
                 playerCards[i].innerHTML += `<img src="${data.cards[cardNum].image}">`
                 cardNum++
-                playerCards[i].innerHTML += `<img src="${data.cards[cardNum].image}">`  
+                playerCards[i].innerHTML += `<img src="${data.cards[cardNum].image}">` 
+                
+                ////////////////////////////////////////////
+                // Move to 'Fetch Deck'
                 document.querySelector(`#player${i}`).appendChild(betForm[i])
                 document.querySelector(`#bet${i}`).appendChild(label[i])
                 document.querySelector(`#bet${i}`).appendChild(betInput[i])
+                /////////////////////////////////////////////
 
-                // Handle hands
+                // Handle hands //
                 playerHand[i] = new Hand(data.cards[cardNum - 1].value, data.cards[cardNum].value)
                 cardNum++
                 
@@ -221,7 +248,9 @@ function dealCards(){
                 }
                 if (dealerHand.card1 === "ACE" || dealerHand.card1 === "10") console.log('insurance option')
                 
-                // Handle bets
+                ///////////////////////////
+                // Move to 'Fetch Deck' function, but keep a copy here for updating wager amount
+                // Handle bets //
                 if (playerBet[i] == undefined) {
                     playerBet[i] = new Bet(Number(betInput[i].value))
                 }
@@ -230,70 +259,40 @@ function dealCards(){
                     playerBet[i].bankroll -= Number(betInput[i].value)
                 }else playerBet[i].bankroll = 1000
             }
-
-            const hitButton = document.createElement('input')
-            hitButton.setAttribute('id', 'hit')
-            hitButton.setAttribute('type', 'button')
-            hitButton.setAttribute('value', 'Hit Me!')
-            document.querySelector('#bet0').appendChild(hitButton).addEventListener('click', playerHand[0].hitCard.bind(event, 'playerHand0'))
-            //playerHand[0].hitCard('playerHand0'))
-            
-            const standButton = document.createElement('input')
-            standButton.setAttribute('id', 'stand')
-            standButton.setAttribute('type', 'button')
-            standButton.setAttribute('value', 'Stand.')
-            document.querySelector('#bet0').appendChild(standButton).addEventListener('click', stand)
-
-
-            //////////////////////////////////////////////////
-            // CODE FOR ONE PLAYER ONLY VERSION
-            // playerCards.innerHTML = `<img src="${data.cards[1].image}">`
-            // playerCards.innerHTML += `<img src="${data.cards[2].image}">`
-            // playerHand = new Hand(data.cards[1].value, data.cards[2].value)
-            // playerHand.calculateValue()
-            
-            // console.log(playerBet)
-            // playerBet = new Bet(Number(betAmount.value))
-            // if (playerBet != undefined) {
-            //     playerBet.wager = Number(betAmount.value)
-            //     playerBet.bankroll -= Number(betAmount.value)
-            // }
-
-            // if (playerHand.handValue === 21) playerHand.natural = true
-
-            // if (playerHand.card1 === playerHand.card2) console.log('option to split') // OPTION TO SPLIT
-
-            // if (playerHand.handValue === 9 || playerHand.handValue === 10 || playerHand.handValue === 11) console.log('option to doubledown')// OPTION TO DOUBLEDOWN
-
-
-            // document.querySelector('#hit').addEventListener('click', playerHand.hitCard.bind('playerHand'))
-            // document.querySelector('#stand').addEventListener('click', stand) 
-            ////////////////////////////////////////////////////
+            passTurn()
         })
         .catch(err => {
             console.log(`error ${err}`)
         });
-
-        // const hitButton = document.createElement('input')
-        // hitButton.setAttribute('id', 'hit')
-        // hitButton.setAttribute('type', 'button')
-        // hitButton.setAttribute('value', 'Hit Me!')
-        // document.querySelector('#bet0').appendChild(hitButton)
-        // .appendChild(hitButton).addEventListener('click', playerHand[0].hitCard)
-        // document.querySelector('#stand').addEventListener('click', stand) 
-
 }
-// Got to change this to pass turn to the next player and then have it automagically have dealer hit/stand after all players' turns
-// Player stands, automagically have dealer hit/stand
-function stand(){
-    console.log(dealerHand.handValue)
-    if (dealerHand.handValue < 17 || dealerHand.handValue == undefined){
-        dealerHand.hitCard('dealerHand')        
+
+// PASS TURN 
+function passTurn(){
+    const hitExists = document.querySelector('#hit')
+    const standExists = document.querySelector('#stand')
+    if (hitExists != null) document.querySelector('#hit').remove()
+    if (standExists != null) document.querySelector('#stand').remove()
+
+    if (playerNum !== numOfPlayers){
+        const hitButton = document.createElement('input')
+        hitButton.setAttribute('id', 'hit')
+        hitButton.setAttribute('type', 'button')
+        hitButton.setAttribute('value', 'Hit Me!')
+        document.querySelector(`#bet${playerNum}`).appendChild(hitButton).addEventListener('click', playerHand[playerNum].hitCard.bind(event, `playerHand${playerNum}`))
+        
+        const standButton = document.createElement('input')
+        standButton.setAttribute('id', 'stand')
+        standButton.setAttribute('type', 'button')
+        standButton.setAttribute('value', 'Stand.')
+        document.querySelector(`#bet${playerNum}`).appendChild(standButton).addEventListener('click', playerHand[playerNum].stand)
     }
 }
+
 // CLEAR DOM/HANDS
 function init(){
     playerHand = []
-    document.querySelector('#players').innerHTML = ''
-    document.querySelector('#dealer-cards').innerHTML = ''
+    playerNum = 0
+    document.querySelector('#players').innerHTML = ''    
+    const dealerExists = document.querySelector('#dealer-cards')
+    if (dealerExists != null) document.querySelector('#dealer-cards').remove()
 }
