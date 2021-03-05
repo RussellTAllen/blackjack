@@ -1,12 +1,13 @@
-// settle() needs work
-//      - check for naturals, payout appropriately
-// Need to allow bets to be made for each player before "deal cards!"
+// Need to get DOM hiding/showing buttons at appropriate times
+//          - move bet DOM creation to fetchDeck()
+//                  - prolly gonna have to move a lot of the variables to the global scope
+//          - allow update of wager in dealCards()
 // Before making app more complex, figure out how to add additional players
 //          - [x] Get proper number of cards dealt in the dealCards function
 //          - [x] Get DOM to print the right amount of player divs... probably need to un-hardcode the HTML and put all in JS
-//          - [ ] Get win conditions working for each player
-//          - [ ] Get bets working for each player
-// Need to get DOM hiding/showing buttons at appropriate times
+//          - [x] Get win conditions working for each player
+//          - [x] Get bets working for each player
+// settle() may make more sense as a separate function than as part of the Bet class
 
 document.querySelector('#get-deck').addEventListener('click', fetchDeck)
 document.querySelector('#deal').addEventListener('click', dealCards)
@@ -25,10 +26,9 @@ let dealerCards
 
 const playerCount = document.querySelector('#player-count')
 
-/////////////
-// CLASSES
-///////////
-
+  ///////////////
+ //  CLASSES  //
+///////////////
 class Hand{
     constructor(card1, card2){
         this.card1 = card1
@@ -102,7 +102,7 @@ class Hand{
             this.handValue -= 10
             this.aces--
         }
-        // // BUST FUNCTION!
+        // Bust function //
         if (this.handValue > 21) {
             this.bust = true
         }
@@ -138,9 +138,9 @@ class Bet{
     }
 }
 
-///////////////
-// FUNCTIONS
-///////////////
+  /////////////////
+ //  FUNCTIONS  //
+/////////////////
 
 // FETCH DECK/SET NUMBER OF PLAYERS
 function fetchDeck(){
@@ -268,10 +268,8 @@ function dealCards(){
 
 // PASS TURN 
 function passTurn(){
-    const hitExists = document.querySelector('#hit')
-    const standExists = document.querySelector('#stand')
-    if (hitExists != null) document.querySelector('#hit').remove()
-    if (standExists != null) document.querySelector('#stand').remove()
+    if (document.querySelector('#hit')) document.querySelector('#hit').remove()
+    if (document.querySelector('#stand')) document.querySelector('#stand').remove()
 
     if (playerNum !== numOfPlayers){
         const hitButton = document.createElement('input')
