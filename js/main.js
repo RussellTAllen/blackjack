@@ -1,3 +1,6 @@
+// Create split and double down functionality
+//      - [ ] Double down
+//      - [ ] Split
 // Clean up DOM
 //      - [ ] Show popup of "You win!" or "You lose!" or "It's a push!" on each player's hand
 //      - [ ] Show "Blackjack!", "Busted!" in DOM as appropriate
