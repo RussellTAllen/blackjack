@@ -11,7 +11,9 @@
 /* LAYOUT
 /*******************************************/
 body{
-  background: rgb(0,155,0);
+  /* background: rgb(0,155,0); */
+  background: rgb(0,75,0);
+  color: rgb(223, 223, 223);
 }
 #deal,
 label{
