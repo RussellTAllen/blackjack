@@ -1,13 +1,16 @@
+// Clean up DOM
+//      - [ ] Show popup of "You win!" or "You lose!" or "It's a push!" on each player's hand
+//      - [ ] Show "Blackjack!", "Busted!" in DOM as appropriate
+//      - [x] Get bet info printing to the DOM
 // Need to get DOM hiding/showing buttons at appropriate times
-//          - move bet DOM creation to fetchDeck()
-//                  - prolly gonna have to move a lot of the variables to the global scope
-//          - allow update of wager in dealCards()
+//      - [x] move bet DOM creation to fetchDeck()
+//      - [x] allow update of wager in dealCards()
 // Before making app more complex, figure out how to add additional players
-//          - [x] Get proper number of cards dealt in the dealCards function
-//          - [x] Get DOM to print the right amount of player divs... probably need to un-hardcode the HTML and put all in JS
-//          - [x] Get win conditions working for each player
-//          - [x] Get bets working for each player
-// settle() may make more sense as a separate function than as part of the Bet class
+//      - [x] Get proper number of cards dealt in the dealCards function
+//      - [x] Get DOM to print the right amount of player divs... probably need to un-hardcode the HTML and put all in JS
+//      - [x] Get win conditions working for each player
+//      - [x] Get bets working for each player
+// settle() may make more sense as a separate function than as part of the Bet class?
 
 document.querySelector('#get-deck').addEventListener('click', fetchDeck)
 document.querySelector('#deal').addEventListener('click', dealCards)
@@ -19,9 +22,12 @@ let dealerCard
 let hits = 2
 let numOfPlayers
 let playerHand = []
+let playerCards = []
 let playerBet = []
 let playerNum = 0
 let betForm = []
+let betInput = []
+let bankroll = []
 let dealerCards
 
 const playerCount = document.querySelector('#player-count')
@@ -49,7 +55,7 @@ class Hand{
                 
                 if (user.includes('playerHand')){
                     playerNum = user.substr(-1, 1)
-                    document.querySelector(`#player-cards${playerNum}`).innerHTML += `<img src="${data.cards[0].image}">`                               
+                    document.querySelector(`#player-cards${playerNum}`).innerHTML += `<img src="${data.cards[0].image}" class="player-cards">`                               
                     playerHand[playerNum][addCard] = data.cards[0].value
                     playerHand[playerNum].calculateValue()
                     if (playerHand[playerNum].handValue > 21){
@@ -134,6 +140,8 @@ class Bet{
                 console.log(`Player ${i+1}, you lose!`)
             }
             console.log(playerBet[i].bankroll)
+            // Print bankroll update to DOM
+            document.querySelector(`#bankroll${i}`).innerText = 'Bankroll: $'+playerBet[i].bankroll
         }
     }
 }
@@ -146,23 +154,77 @@ class Bet{
 function fetchDeck(){
     const deckNum = document.querySelector('#deck-quantity').value
     numOfPlayers = Number(playerCount.value)
-
+    
     fetch('https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count='+deckNum)
-        .then(res => res.json()) // parse response as JSON
-        .then(data => {
+    .then(res => res.json()) // parse response as JSON
+    .then(data => {
         console.log(data)
         deckID = data.deck_id
         console.log(deckID)
-        })
-        .catch(err => {
-            console.log(`error ${err}`)
-        });
-}
+    })
+    .catch(err => {
+        console.log(`error ${err}`)
+    });
 
+    let div = []
+    let label = []
+    
+    for (let i = 0; i < numOfPlayers; i++){
+        // Create DOM elements //
+        const header = document.createElement('h2')
+        header.innerText = `Player ${i+1}`
+
+        const bankroll = document.createElement('h3')
+        bankroll.setAttribute('id', `bankroll${i}`)
+        bankroll.innerText = `Bankroll: $1000`
+        
+        div[i] = document.createElement('div')
+        div[i].setAttribute('id', `player${i}`)
+        
+        playerCards[i] = document.createElement('figure')
+        playerCards[i].setAttribute('id', `player-cards${i}`)
+        // playerCards[i].setAttribute('class', 'player-cards')
+        
+        label[i] = document.createElement('label')
+        label[i].setAttribute('for', `bet-amount${i}`)
+        label[i].textContent = "Bet: "
+        
+        betForm[i] = document.createElement('form')
+        betForm[i].setAttribute('id', `bet${i}`)
+        
+        betInput[i] = document.createElement('input')
+        betInput[i].setAttribute('id', `bet-amount${i}`)
+        betInput[i].setAttribute('type', 'number')
+        betInput[i].setAttribute('min', 10)
+        betInput[i].setAttribute('max', 1000)
+        betInput[i].setAttribute('step', 10)
+        betInput[i].setAttribute('value', 10)
+        
+        // Insert elements into DOM //
+        document.querySelector('#players').appendChild(div[i])
+        document.querySelector(`#player${i}`).appendChild(header)
+        document.querySelector(`#player${i}`).appendChild(bankroll)
+        document.querySelector(`#player${i}`).appendChild(playerCards[i])
+        document.querySelector(`#player${i}`).appendChild(betForm[i])
+        document.querySelector(`#bet${i}`).appendChild(label[i])
+        document.querySelector(`#bet${i}`).appendChild(betInput[i])
+
+        // Handle bets //
+        // if (playerBet[i] == undefined) {
+        //     playerBet[i] = new Bet(Number(betInput[i].value))
+        // }
+        // playerBet[i].wager = Number(betInput[i].value)
+        // if (playerBet[i] != undefined) {
+        //     playerBet[i].bankroll -= Number(betInput[i].value)
+        // }else playerBet[i].bankroll = 1000
+    }
+}
+    
 // DEAL INITIAL HANDS
 function dealCards(){
     init()
     const numOfCards = (numOfPlayers*2) + 1
+    
 
     fetch(`https://deckofcardsapi.com/api/deck/${deckID}/draw/?count=`+numOfCards)
         .then(res => res.json()) // parse response as JSON
@@ -181,56 +243,26 @@ function dealCards(){
             dealerHand = new Hand(data.cards[0].value)     
             
             // Handle Players //
-            let div = []
-            let betForm = []
-            let betInput = []
             let cardNum = 1
-            let label = []
-            let playerCards = []
             
             for (let i = 0; i < numOfPlayers; i++){
-                // Create DOM elements //
-                ////////////////////////////////////////////////////
-                // Think I need to move all this into the 'Fetch Deck' function
-                const header = document.createElement('h2')
-                header.innerText = `Player ${i+1}`
+                /////////////////////////////////
+                // This is one way of printing cards to DOM //
+                // const cardOne = document.createElement('img')
+                // cardOne.src = `${data.cards[cardNum].image}`
+                // cardOne.setAttribute('class', 'player-cards')
+                // cardNum++
+                // const cardTwo = document.createElement('img')
+                // cardTwo.src = `${data.cards[cardNum].image}`
+                // cardTwo.setAttribute('class', 'player-cards')
 
-                div[i] = document.createElement('div')
-                div[i].setAttribute('id', `player${i}`)
-                
-                playerCards[i] = document.createElement('figure')
-                playerCards[i].setAttribute('id', `player-cards${i}`)
-
-                label[i] = document.createElement('label')
-                label[i].setAttribute('for', `bet-amount${i}`)
-                label[i].textContent = "Bet: "
-                
-                betForm[i] = document.createElement('form')
-                betForm[i].setAttribute('id', `bet${i}`)
-
-                betInput[i] = document.createElement('input')
-                betInput[i].setAttribute('id', `bet-amount${i}`)
-                betInput[i].setAttribute('type', 'number')
-                betInput[i].setAttribute('min', 10)
-                betInput[i].setAttribute('max', 1000)
-                betInput[i].setAttribute('step', 10)
-                betInput[i].setAttribute('value', 10)
-                ////////////////////////////////////////////////////
-                
-                // Insert elements into DOM //
-                document.querySelector('#players').appendChild(div[i])
-                document.querySelector(`#player${i}`).appendChild(header)
-                document.querySelector(`#player${i}`).appendChild(playerCards[i])
-                playerCards[i].innerHTML += `<img src="${data.cards[cardNum].image}">`
+                // document.querySelector(`#player-cards${i}`).appendChild(cardOne)
+                // document.querySelector(`#player-cards${i}`).appendChild(cardTwo)
+                /////////////////////////
+                // Print cards to DOM //
+                document.querySelector(`#player-cards${i}`).innerHTML += `<img src="${data.cards[cardNum].image}" class="player-cards">`
                 cardNum++
-                playerCards[i].innerHTML += `<img src="${data.cards[cardNum].image}">` 
-                
-                ////////////////////////////////////////////
-                // Move to 'Fetch Deck'
-                document.querySelector(`#player${i}`).appendChild(betForm[i])
-                document.querySelector(`#bet${i}`).appendChild(label[i])
-                document.querySelector(`#bet${i}`).appendChild(betInput[i])
-                /////////////////////////////////////////////
+                document.querySelector(`#player-cards${i}`).innerHTML += `<img src="${data.cards[cardNum].image}" class="player-cards">` 
 
                 // Handle hands //
                 playerHand[i] = new Hand(data.cards[cardNum - 1].value, data.cards[cardNum].value)
@@ -248,8 +280,6 @@ function dealCards(){
                 }
                 if (dealerHand.card1 === "ACE" || dealerHand.card1 === "10") console.log('insurance option')
                 
-                ///////////////////////////
-                // Move to 'Fetch Deck' function, but keep a copy here for updating wager amount
                 // Handle bets //
                 if (playerBet[i] == undefined) {
                     playerBet[i] = new Bet(Number(betInput[i].value))
@@ -258,12 +288,16 @@ function dealCards(){
                 if (playerBet[i] != undefined) {
                     playerBet[i].bankroll -= Number(betInput[i].value)
                 }else playerBet[i].bankroll = 1000
+
+                // Print bankroll update to DOM //
+                document.querySelector(`#bankroll${i}`).innerText = 'Bankroll: $'+playerBet[i].bankroll
             }
             passTurn()
         })
         .catch(err => {
             console.log(`error ${err}`)
         });
+
 }
 
 // PASS TURN 
@@ -290,7 +324,8 @@ function passTurn(){
 function init(){
     playerHand = []
     playerNum = 0
-    document.querySelector('#players').innerHTML = ''    
-    const dealerExists = document.querySelector('#dealer-cards')
-    if (dealerExists != null) document.querySelector('#dealer-cards').remove()
+    if (document.querySelector('#dealer-cards')) document.querySelector('#dealer-cards').remove()
+    for (let i = 0; i < numOfPlayers; i++){
+        document.querySelector(`#player-cards${i}`).innerHTML = ''
+    }
 }
