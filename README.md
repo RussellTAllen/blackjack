@@ -1,3 +1,6 @@
 Blackjack card game
 
-Not hosted anywhere yet.  Need to complete the "split" functionality, and then this will be a full-on blackjack game for up to four players.
+- Up to four players
+- This was just an exercise in logic and object-oriented programming
+- Not hosted anywhere.  Everything works except the "split" functionality
+
